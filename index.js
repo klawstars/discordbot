@@ -792,8 +792,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       // /role
       if (interaction.commandName === "role") {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
         const embed = new EmbedBuilder()
           .setColor(0x0f172a)
           .setDescription(ROLE_EMBED_TEXT)
@@ -807,7 +805,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           .setEmoji("🔑");
 
         const row = new ActionRowBuilder().addComponents(button);
-        await interaction.editReply({ embeds: [embed], components: [row] });
+        await interaction.reply({ embeds: [embed], components: [row] });
         return;
       }
 
