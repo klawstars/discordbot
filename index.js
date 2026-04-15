@@ -24,110 +24,16 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 const ALLOWED_ROLE_ID = process.env.ALLOWED_ROLE_ID;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const SELLAUTH_API_KEY = process.env.SELLAUTH_API_KEY;
 const SELLAUTH_SHOP_ID = process.env.SELLAUTH_SHOP_ID;
 const SELLAUTH_API_BASE = process.env.SELLAUTH_API_BASE || "https://api.sellauth.com/v1";
 const CUSTOMER_ROLE_ID = "1458213066435989639";
 
-const REQUIRED_ENV = ["BOT_TOKEN", "CLIENT_ID", "ALLOWED_ROLE_ID", "GROQ_API_KEY", "SELLAUTH_API_KEY", "SELLAUTH_SHOP_ID"];
+const REQUIRED_ENV = ["BOT_TOKEN", "CLIENT_ID", "ALLOWED_ROLE_ID", "SELLAUTH_API_KEY", "SELLAUTH_SHOP_ID"];
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
-}
-
-// ─── AI CONFIG ────────────────────────────────────────────────────────────────
-
-const AI_CHANNEL_IDS = ["1458213106881790033", "1458213107993280615"];
-const GROQ_MODEL = "llama-3.3-70b-versatile";
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const PROMPT_FILE = path.join(__dirname, "prompt.txt");
-
-const conversationHistory = new Map();
-const MAX_HISTORY = 20;
-
-function loadSystemPrompt() {
-  try {
-    return fs.readFileSync(PROMPT_FILE, "utf-8").trim();
-  } catch {
-    console.warn("prompt.txt not found, using fallback system prompt.");
-    return "You are a helpful support assistant for a gaming software store.";
-  }
-}
-
-function getHistory(channelId) {
-  if (!conversationHistory.has(channelId)) {
-    conversationHistory.set(channelId, []);
-  }
-  return conversationHistory.get(channelId);
-}
-
-function pushHistory(channelId, role, content) {
-  const history = getHistory(channelId);
-  history.push({ role, content });
-  if (history.length > MAX_HISTORY) {
-    history.splice(0, history.length - MAX_HISTORY);
-  }
-}
-
-async function askGroq(channelId, userMessage) {
-  const systemPrompt = loadSystemPrompt();
-  const history = getHistory(channelId);
-
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...history,
-    { role: "user", content: userMessage },
-  ];
-
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages,
-      max_tokens: 512,
-      temperature: 0.7,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Groq API error ${response.status}: ${err}`);
-  }
-
-  const data = await response.json();
-  const reply = data.choices?.[0]?.message?.content?.trim();
-
-  if (!reply) throw new Error("Empty response from Groq");
-
-  pushHistory(channelId, "user", userMessage);
-  pushHistory(channelId, "assistant", reply);
-
-  return reply;
-}
-
-function splitMessage(text, maxLength = 1900) {
-  if (text.length <= maxLength) return [text];
-
-  const chunks = [];
-  let current = "";
-
-  for (const line of text.split("\n")) {
-    if ((current + "\n" + line).length > maxLength) {
-      if (current) chunks.push(current.trim());
-      current = line;
-    } else {
-      current += (current ? "\n" : "") + line;
-    }
-  }
-
-  if (current) chunks.push(current.trim());
-  return chunks;
 }
 
 // ─── CATEGORIES & PRODUCTS ───────────────────────────────────────────────────
@@ -686,44 +592,25 @@ async function registerCommands() {
 // ─── CLIENT ───────────────────────────────────────────────────────────────────
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+  intents: [GatewayIntentBits.Guilds],
 });
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Logged in as ${readyClient.user.tag}`);
 });
 
-// ─── MESSAGE HANDLER (AI) ─────────────────────────────────────────────────────
-
-client.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot) return;
-  if (!AI_CHANNEL_IDS.includes(message.channel.parentId)) return;
-
-  const content = message.content?.trim();
-  if (!content) return;
-
-  await message.channel.sendTyping().catch(() => {});
-
-  try {
-    const reply = await askGroq(message.channelId, content);
-    const chunks = splitMessage(reply);
-    for (const chunk of chunks) {
-      await message.reply(chunk);
-    }
-  } catch (error) {
-    console.error("Groq AI error:", error);
-    await message.reply("❌ Sorry, I ran into an issue processing your request. Please try again later.").catch(() => {});
-  }
-});
-
 // ─── INTERACTION HANDLER ──────────────────────────────────────────────────────
 
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
-    // Allow the role verify button and modal for everyone — no role required
+    // Public interactions (everyone can use posted embeds/buttons)
     const isPublicInteraction =
       (interaction.isButton() && interaction.customId === "role_verify_button") ||
-      (interaction.isModalSubmit() && interaction.customId === "role_verify_modal");
+      (interaction.isModalSubmit() && interaction.customId === "role_verify_modal") ||
+      (interaction.isStringSelectMenu() &&
+        ["status_category", "status_product", "dl_category", "dl_product"].includes(
+          interaction.customId
+        ));
 
     if (!isPublicInteraction && !hasAllowedRole(interaction)) {
       if (interaction.isRepliable()) {
