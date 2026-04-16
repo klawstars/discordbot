@@ -45,7 +45,6 @@ const CATEGORIES = [
     products: [
       { id: "BO7 - Unlocker", name: "BO7 - Unlocker" },
       { id: "BO7 - ZeroAim", name: "BO7 - ZeroAim" },
-      { id: "BO7 - Internal", name: "BO7 - Internal" },
     ],
   },
   {
@@ -53,7 +52,9 @@ const CATEGORIES = [
     name: "Arc Raiders",
     products: [
       { id: "Arc - Ancient", name: "Arc - Ancient" },
-      { id: "Arc - External", name: "Arc - External" },
+      { id: "Arc - Arcane", name: "Arc - Arcane" },
+      { id: "Arc - Ignite", name: "Arc - Ignite" },
+
     ],
   },
   {
@@ -61,7 +62,7 @@ const CATEGORIES = [
     name: "Rainbow Six",
     products: [
       { id: "R6 - Ancient", name: "R6 - Ancient" },
-      { id: "R6 - External", name: "R6 - External" },
+      { id: "R6 - Vega", name: "R6 - Vega" },
     ],
   },
   {
@@ -69,7 +70,7 @@ const CATEGORIES = [
     name: "Battlefield 6",
     products: [
       { id: "BF6 - Ancient", name: "BF6 - Ancient" },
-      { id: "BF6 - Arcane", name: "BF6 - Arcane" },
+      { id: "BF6 - Ignite", name: "BF6 - Ignite" },
     ],
   },
   {
@@ -78,6 +79,8 @@ const CATEGORIES = [
     products: [
       { id: "Rust - Ancient", name: "Rust - Ancient" },
       { id: "Rust - Ignite", name: "Rust - Ignite" },
+      { id: "Rust - Akuma", name: "Rust - Akuma" },
+
     ],
   },
   {
@@ -86,6 +89,8 @@ const CATEGORIES = [
     products: [
       { id: "FN - Ancient", name: "FN - Ancient" },
       { id: "FN - Arcane", name: "FN - Arcane" },
+      { id: "FN - Ignite", name: "FN - Ignite" },
+
     ],
   },
   {
